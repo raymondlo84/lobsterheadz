@@ -93,6 +93,11 @@ Any transparent PNG works as an overlay. Tips:
 
 ## Install on OpenClaw
 
+```
+openclaw skills install git:https://github.com/raymondlo84/lobsterheadz.git
+```
+
+
 To add LobsterHeadz as a skill in OpenClaw, use this agent configuration:
 
 ```yaml
