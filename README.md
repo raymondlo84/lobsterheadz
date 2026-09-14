@@ -2,7 +2,7 @@
 
 Face-tracking webcam app that overlays two bouncy lobster images on people's heads in real-time.
 
-![Demo](docs/demo.gif)
+![Demo](docs/demo.png)
 
 > Put lobsters on people's heads. That's it. That's the app.
 
@@ -90,6 +90,24 @@ Any transparent PNG works as an overlay. Tips:
 |---------|---------|---------|
 | `mediapipe` | 0.10.18 | Face mesh detection |
 | `opencv-python` | 4.9.0.80 | Video capture & image processing |
+
+## Install on OpenClaw
+
+To add LobsterHeadz as a skill in OpenClaw, use this agent configuration:
+
+```yaml
+skills:
+  custom:
+    - path: ./lobsterheadz
+      name: lobsterheadz
+      description: "Face tracking app that overlays lobster images on people's heads — 1080p30 via MJPEG"
+```
+
+Or create a `lobsterheadz` skill directory with:
+- `SKILL.md` — skill description file
+- `lobstercam.py` — main application
+- `lobster_overlay.png` — default overlay image
+- `requirements.txt` — Python dependencies
 
 ## License
 
