@@ -41,6 +41,9 @@ pip3 install -r requirements.txt
 # Default camera, bundled lobster overlay
 python3 lobstercam.py
 
+# On headless machines / X server without display (e.g. Jetson with DISPLAY=:1)
+DISPLAY=:1 python3 lobstercam.py --camera 0
+
 # Custom camera index
 python3 lobstercam.py --camera 1
 
