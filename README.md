@@ -39,22 +39,19 @@ pip3 install -r requirements.txt
 
 ```bash
 # Default camera, bundled lobster overlay
-python3 lobstercam.py
-
-# On headless machines / X server without display (e.g. Jetson with DISPLAY=:1)
 DISPLAY=:1 python3 lobstercam.py --camera 0
 
 # Custom camera index
-python3 lobstercam.py --camera 1
+DISPLAY=:1 python3 lobstercam.py --camera 1
 
 # Custom overlay image (transparent PNG, preferably 256×256+)
-python3 lobstercam.py --image /path/to/my-overlay.png
+DISPLAY=:1 python3 lobstercam.py --image /path/to/my-overlay.png
 
 # Custom resolution
-python3 lobstercam.py --width 1280 --height 720 --fps 24
+DISPLAY=:1 python3 lobstercam.py --width 1280 --height 720 --fps 24
 
 # Combine options
-python3 lobstercam.py --camera 2 --image overlays/cat.png --width 1920 --height 1080
+DISPLAY=:1 python3 lobstercam.py --camera 2 --image overlays/cat.png --width 1920 --height 1080
 ```
 
 Press **Q** in the camera window to quit.
