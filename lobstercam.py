@@ -138,9 +138,21 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset):
     overlay_image_with_transparency(frame, lobster_img, px + offset_x, lobster_y, scale)
 
 
+def open_camera(camera_input, backend):
+    """Open camera device with a specific OpenCV backend."""
+    cap = cv2.VideoCapture(camera_input, backend)
+    if not cap.isOpened():
+        return None
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    cap.set(cv2.CAP_PROP_FPS, 30)
+    return cap
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="LobsterHeadz 🦞 - Put lobsters on people's heads")
-    parser.add_argument("--camera", type=int, default=0, help="Camera device index (default: 0)")
+    parser.add_argument("--camera", type=str, default="/dev/video0", help="Camera device index or path (default: /dev/video0)")
     parser.add_argument("--image", type=str, default=None, help="Path to overlay image (overrides default)")
     parser.add_argument("--width", type=int, default=1920, help="Camera width (default: 1920)")
     parser.add_argument("--height", type=int, default=1080, help="Camera height (default: 1080)")
@@ -165,16 +177,16 @@ def main():
             lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_BGR2RGBA)
         lobster_img[lobster_img[:, :, 3] == 0] = [255, 255, 255, 0]
 
-    cap = cv2.VideoCapture(args.camera)
+    # Try the specified camera first, fall back to /dev/video2 if it fails
+    cap = cv2.VideoCapture(args.camera, cv2.CAP_V4L2)
     if not cap.isOpened():
-        print(f"Error: Could not open camera device {args.camera}.")
-        return
+        print(f"Warning: Could not open {args.camera}, trying /dev/video2")
+        cap = cv2.VideoCapture('/dev/video2', cv2.CAP_V4L2)
+        if not cap.isOpened():
+            print("Error: Could not open camera /dev/video2.")
+            return
+        args.camera = '/dev/video2'
 
-    # Use MJPEG to get full 1080p30 — the camera only hits 30fps in MJPEG mode
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
-    cap.set(cv2.CAP_PROP_FPS, args.fps)
     print(f"Camera {args.camera}: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}@{cap.get(cv2.CAP_PROP_FPS)}fps")
     print(f"Overlay: {lobster_path} ({lobster_img.shape[1]}x{lobster_img.shape[0]})")
 
