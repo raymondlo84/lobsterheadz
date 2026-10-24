@@ -14,19 +14,6 @@ mp_draw = mp.solutions.drawing_utils
 # Resolve the lobster overlay path relative to this script's directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOBSTER_PATH = os.path.join(SCRIPT_DIR, "lobster_overlay.png")
-lobster_img = cv2.imread(LOBSTER_PATH, cv2.IMREAD_UNCHANGED)
-
-if lobster_img is None:
-    print(f"Error: Could not load lobster image from {LOBSTER_PATH}")
-    lobster_img = np.zeros((100, 100, 4), dtype=np.uint8)  # Fallback
-    lobster_img[:, :, 3] = 255  # Fully transparent
-else:
-    # Convert to RGBA if needed
-    if len(lobster_img.shape) == 2:
-        lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_GRAY2RGBA)
-    elif lobster_img.shape[2] == 3:
-        lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_BGR2RGBA)
-    lobster_img[lobster_img[:, :, 3] == 0] = [255, 255, 255, 0]  # Make transparent areas white
 
 
 def estimate_top_of_head(face_landmarks, w, h):
@@ -118,7 +105,7 @@ def overlay_image_with_transparency(frame, overlay, x, y, scale=1.0):
         frame_roi[:] = overlay_roi
 
 
-def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset):
+def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset, overlay):
     """Draw TWO lobster images on top of the person's head."""
     px, py, brow_dist = estimate_top_of_head(face_landmarks, w, h)
 
@@ -134,8 +121,8 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset):
     offset_x = int(brow_dist * w * 0.6)
 
     # Overlay both lobster images
-    overlay_image_with_transparency(frame, lobster_img, px - offset_x, lobster_y, scale)
-    overlay_image_with_transparency(frame, lobster_img, px + offset_x, lobster_y, scale)
+    overlay_image_with_transparency(frame, overlay, px - offset_x, lobster_y, scale)
+    overlay_image_with_transparency(frame, overlay, px + offset_x, lobster_y, scale)
 
 
 def open_camera(camera_input, backend):
@@ -222,7 +209,7 @@ def main():
             if results and results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
                     # Lobster on head
-                    draw_lobster_on_head(frame, face_landmarks, h, w, elapsed)
+                    draw_lobster_on_head(frame, face_landmarks, h, w, elapsed, lobster_img)
 
             # Title
             face_count = len(results.multi_face_landmarks) if results and results.multi_face_landmarks else 0
