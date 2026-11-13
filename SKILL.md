@@ -1,3 +1,8 @@
+---
+name: lobsterheadz
+description: "Track webcam faces and overlay two lobster images on each head. Use when asked to run LobsterHeadz or a lobster camera demo."
+---
+
 # LobsterCam 2 🦞
 
 > Description: Face tracking app that overlays lobster images on people's heads — now at 1080p30 via MJPEG.

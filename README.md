@@ -20,7 +20,7 @@ Face-tracking webcam app that overlays two bouncy lobster images on people's hea
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.9–3.12 (required by the pinned MediaPipe 0.10.18 wheels)
 - A webcam (any OpenCV-compatible camera)
 - Linux (tested on Ubuntu/Jetson), should work on macOS/Windows too
 
@@ -98,21 +98,40 @@ openclaw skills install git:https://github.com/raymondlo84/lobsterheadz.git
 ```
 
 
-To add LobsterHeadz as a skill in OpenClaw, use this agent configuration:
+To load a local clone without installing it, add its **parent directory** to
+`skills.load.extraDirs` in `~/.openclaw/openclaw.json` (merge this into your
+existing config):
 
-```yaml
-skills:
-  custom:
-    - path: ./lobsterheadz
-      name: lobsterheadz
-      description: "Face tracking app that overlays lobster images on people's heads — 1080p30 via MJPEG"
+```json
+{
+  "skills": {
+    "load": {
+      "extraDirs": ["/absolute/path/to/local-skills"]
+    }
+  }
+}
 ```
+
+For that example, put this repo at `/absolute/path/to/local-skills/lobsterheadz`.
+The included `SKILL.md` supplies the skill name and description.
 
 Or create a `lobsterheadz` skill directory with:
 - `SKILL.md` — skill description file
 - `lobstercam.py` — main application
 - `lobster_overlay.png` — default overlay image
 - `requirements.txt` — Python dependencies
+
+## Tests
+
+After installing the dependencies, run:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+These tests run the application entry point with a synthetic camera and face
+landmarks, without a webcam, display, or model inference. They verify that custom
+and bundled overlays both reach the real rendering path.
 
 ## License
 
