@@ -187,6 +187,13 @@ def main():
             return
         args.camera = '/dev/video2'
 
+    # Set MJPG + requested resolution (must be done right after open; the
+    # driver only exposes 1080p30 in MJPG mode, not raw YUV)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
+    cap.set(cv2.CAP_PROP_FPS, args.fps)
+
     print(f"Camera {args.camera}: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}@{cap.get(cv2.CAP_PROP_FPS)}fps")
     print(f"Overlay: {lobster_path} ({lobster_img.shape[1]}x{lobster_img.shape[0]})")
 

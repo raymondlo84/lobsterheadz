@@ -52,3 +52,11 @@ python3 lobstercam.py --image /path/to/my-overlay.png
 - `lobstercam.py` — main application
 - `lobster_overlay.png` — lobster overlay image (transparent PNG, 256×256)
 - `requirements.txt` — pinned dependencies
+
+## Known Fix (2026-11-12)
+
+Earlier versions opened the camera but never applied MJPG or the `--width/--height/--fps`
+flags (the `open_camera()` helper was never called), so the camera opened at its
+640×480 default. `main()` now sets `MJPG` + width/height/fps right after
+`cv2.VideoCapture` so the flags actually take effect (1920×1080@30 works via MJPG;
+the driver does not expose 1080p in raw YUV).
