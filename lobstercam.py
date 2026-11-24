@@ -298,7 +298,7 @@ def main():
 
             # Title
             face_count = len(results.multi_face_landmarks) if results and results.multi_face_landmarks else 0
-            cv2.putText(frame, f"Lobster Headz 🦞 ({face_count} heads, {hand_count} hands)", (15, 30),
+            cv2.putText(frame, f"Lobster Headz (~^..^~) ({face_count} heads, {hand_count} hands)", (15, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 100, 255), 2)
 
             cv2.imshow("Lobster Headz", frame)
