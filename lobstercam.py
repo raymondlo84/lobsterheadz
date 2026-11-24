@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Face tracking app that puts a lobster image on people's heads. 🦞"""
+"""Face and hand tracking app that puts a lobster on people's heads and a lobster claw on their hands. 🦞"""
 
 import cv2
 import mediapipe as mp
@@ -9,24 +9,30 @@ import os
 import argparse
 
 mp_face = mp.solutions.face_mesh
+mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
 
-# Resolve the lobster overlay path relative to this script's directory
+# Resolve overlay paths relative to this script's directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOBSTER_PATH = os.path.join(SCRIPT_DIR, "lobster_overlay.png")
-lobster_img = cv2.imread(LOBSTER_PATH, cv2.IMREAD_UNCHANGED)
+CLAW_PATH = os.path.join(SCRIPT_DIR, "lobster_claw.png")
 
-if lobster_img is None:
-    print(f"Error: Could not load lobster image from {LOBSTER_PATH}")
-    lobster_img = np.zeros((100, 100, 4), dtype=np.uint8)  # Fallback
-    lobster_img[:, :, 3] = 255  # Fully transparent
-else:
-    # Convert to RGBA if needed
-    if len(lobster_img.shape) == 2:
-        lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_GRAY2RGBA)
-    elif lobster_img.shape[2] == 3:
-        lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_BGR2RGBA)
-    lobster_img[lobster_img[:, :, 3] == 0] = [255, 255, 255, 0]  # Make transparent areas white
+
+def load_rgba(path):
+    """Load an overlay image as RGBA. Returns a transparent fallback on failure."""
+    img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+    if img is None:
+        print(f"Error: Could not load overlay image from {path}")
+        img = np.zeros((100, 100, 4), dtype=np.uint8)
+        img[:, :, 3] = 0  # Fully transparent
+    else:
+        # Convert to RGBA if needed
+        if len(img.shape) == 2:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGBA)
+        elif img.shape[2] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+        img[img[:, :, 3] == 0] = [255, 255, 255, 0]  # Make transparent areas white
+    return img
 
 
 def estimate_top_of_head(face_landmarks, w, h):
@@ -75,6 +81,33 @@ def estimate_face_size(face_landmarks):
     return width, height
 
 
+def estimate_hand_center(hand_landmarks, w, h):
+    """Estimate the center of a hand using MediaPipe hand landmarks."""
+    lm = hand_landmarks.landmark
+    wrist = (lm[0].x, lm[0].y)        # wrist
+    mid_mcp = (lm[9].x, lm[9].y)      # middle finger base (palm center)
+    thumb_tip = (lm[4].x, lm[4].y)    # thumb tip
+    pinky_tip = (lm[20].x, lm[20].y)  # pinky tip
+
+    # Center between wrist and palm
+    center_x = (wrist[0] + mid_mcp[0]) / 2
+    center_y = (wrist[1] + mid_mcp[1]) / 2
+
+    # Thumb-to-pinky distance (proxy for hand width)
+    hand_width = math.sqrt(
+        (pinky_tip[0] - thumb_tip[0]) ** 2 +
+        (pinky_tip[1] - thumb_tip[1]) ** 2
+    )
+
+    # Clamp to image bounds, then convert to pixel coordinates
+    center_x = max(0.01, min(0.99, center_x))
+    center_y = max(0.01, min(0.99, center_y))
+    pixel_x = int(center_x * w)
+    pixel_y = int(center_y * h)
+
+    return pixel_x, pixel_y, hand_width
+
+
 def overlay_image_with_transparency(frame, overlay, x, y, scale=1.0):
     """Overlay an image with transparency onto the frame."""
     h, w = overlay.shape[:2]
@@ -118,7 +151,7 @@ def overlay_image_with_transparency(frame, overlay, x, y, scale=1.0):
         frame_roi[:] = overlay_roi
 
 
-def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset):
+def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset, overlay):
     """Draw TWO lobster images on top of the person's head."""
     px, py, brow_dist = estimate_top_of_head(face_landmarks, w, h)
 
@@ -134,14 +167,30 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset):
     offset_x = int(brow_dist * w * 0.6)
 
     # Overlay both lobster images
-    overlay_image_with_transparency(frame, lobster_img, px - offset_x, lobster_y, scale)
-    overlay_image_with_transparency(frame, lobster_img, px + offset_x, lobster_y, scale)
+    overlay_image_with_transparency(frame, overlay, px - offset_x, lobster_y, scale)
+    overlay_image_with_transparency(frame, overlay, px + offset_x, lobster_y, scale)
+
+
+def draw_claw_on_hand(frame, hand_landmarks, h, w, time_offset, overlay, hand_index=0):
+    """Draw a lobster claw on the detected hand."""
+    px, py, hand_width = estimate_hand_center(hand_landmarks, w, h)
+
+    # Scale claw based on hand size
+    scale = max(0.4, min(1.6, hand_width * 3.0))
+
+    # Subtle bounce animation, phase-shifted per hand
+    bounce = math.sin((time_offset + hand_index * 0.7) * 3.0) * 5
+    claw_y = int(py + bounce)
+
+    overlay_image_with_transparency(frame, overlay, px, claw_y, scale)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="LobsterHeadz 🦞 - Put lobsters on people's heads")
+    parser = argparse.ArgumentParser(description="LobsterHeadz 🦞 - Put lobsters on people's heads and claws on their hands")
     parser.add_argument("--camera", type=str, default="/dev/video0", help="Camera device index or path (default: /dev/video0)")
     parser.add_argument("--image", type=str, default=None, help="Path to overlay image (overrides default)")
+    parser.add_argument("--claw-image", type=str, default=None, help="Path to claw overlay image (overrides bundled lobster_claw.png)")
+    parser.add_argument("--no-claws", action="store_true", help="Disable hand tracking and claw overlay")
     parser.add_argument("--width", type=int, default=1920, help="Camera width (default: 1920)")
     parser.add_argument("--height", type=int, default=1080, help="Camera height (default: 1080)")
     parser.add_argument("--fps", type=int, default=30, help="Camera FPS (default: 30)")
@@ -151,19 +200,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Use the user-specified image, or fall back to the bundled one
+    # Use the user-specified images, or fall back to the bundled ones
     lobster_path = args.image if args.image else LOBSTER_PATH
-    lobster_img = cv2.imread(lobster_path, cv2.IMREAD_UNCHANGED)
-    if lobster_img is None:
-        print(f"Error: Could not load lobster image from {lobster_path}")
-        lobster_img = np.zeros((100, 100, 4), dtype=np.uint8)
-        lobster_img[:, :, 3] = 255
-    else:
-        if len(lobster_img.shape) == 2:
-            lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_GRAY2RGBA)
-        elif lobster_img.shape[2] == 3:
-            lobster_img = cv2.cvtColor(lobster_img, cv2.COLOR_BGR2RGBA)
-        lobster_img[lobster_img[:, :, 3] == 0] = [255, 255, 255, 0]
+    lobster_img = load_rgba(lobster_path)
+    claw_path = args.claw_image if args.claw_image else CLAW_PATH
+    claw_img = None if args.no_claws else load_rgba(claw_path)
 
     # Try the specified camera first, fall back to /dev/video2 if it fails
     cap = cv2.VideoCapture(args.camera, cv2.CAP_V4L2)
@@ -184,6 +225,8 @@ def main():
 
     print(f"Camera {args.camera}: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}@{cap.get(cv2.CAP_PROP_FPS)}fps")
     print(f"Overlay: {lobster_path} ({lobster_img.shape[1]}x{lobster_img.shape[0]})")
+    if claw_img is not None:
+        print(f"Claw overlay: {claw_path} ({claw_img.shape[1]}x{claw_img.shape[0]})")
 
     face_mesh = mp_face.FaceMesh(
         static_image_mode=False,
@@ -192,6 +235,15 @@ def main():
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
     )
+
+    hand_tracker = None
+    if claw_img is not None:
+        hand_tracker = mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=4,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
 
     start_time = None
 
@@ -217,11 +269,20 @@ def main():
             if results and results.multi_face_landmarks:
                 for face_landmarks in results.multi_face_landmarks:
                     # Lobster on head
-                    draw_lobster_on_head(frame, face_landmarks, h, w, elapsed)
+                    draw_lobster_on_head(frame, face_landmarks, h, w, elapsed, lobster_img)
+
+            # Draw claws on all detected hands
+            hand_count = 0
+            if hand_tracker is not None:
+                hand_results = hand_tracker.process(rgb)
+                if hand_results and hand_results.multi_hand_landmarks:
+                    for i, hand_landmarks in enumerate(hand_results.multi_hand_landmarks):
+                        draw_claw_on_hand(frame, hand_landmarks, h, w, elapsed, claw_img, i)
+                        hand_count += 1
 
             # Title
             face_count = len(results.multi_face_landmarks) if results and results.multi_face_landmarks else 0
-            cv2.putText(frame, f"Lobster Headz 🦞 ({face_count})", (15, 30),
+            cv2.putText(frame, f"Lobster Headz 🦞 ({face_count} heads, {hand_count} hands)", (15, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 100, 255), 2)
 
             cv2.imshow("Lobster Headz", frame)
@@ -231,6 +292,8 @@ def main():
     finally:
         cap.release()
         face_mesh.close()
+        if hand_tracker is not None:
+            hand_tracker.close()
         cv2.destroyAllWindows()
 
 

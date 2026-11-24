@@ -1,18 +1,20 @@
 ---
 name: lobsterheadz
-description: Face-tracking webcam app that puts bouncing lobster images on detected heads in real time; run lobstercam.py (1080p30 MJPEG, MediaPipe).
+description: Face-tracking webcam app that puts bouncing lobsters on heads and lobster claws on hands in real time; run lobstercam.py (1080p30 MJPEG, MediaPipe).
 ---
 
 # LobsterCam 2 🦞
 
-> Description: Face tracking app that overlays lobster images on people's heads — now at 1080p30 via MJPEG.
+> Description: Face tracking app that overlays lobster images on people's heads and lobster claws on their hands — now at 1080p30 via MJPEG.
 
-Face tracking app that overlays lobster images on people's heads — now at 1080p30 via MJPEG.
+Face tracking app that overlays lobster images on people's heads and lobster claws on their hands — now at 1080p30 via MJPEG.
 
 ## Features
 - Real-time face detection and tracking via MediaPipe
+- Real-time hand detection and tracking via MediaPipe Hands
 - 2 lobster overlays per detected face (side-by-side, ~5 max)
-- Transparent PNG overlay with proper alpha blending
+- Lobster claw overlay on every detected hand (~4 max)
+- Transparent PNG overlays with proper alpha blending
 - Bounce animation on the lobsters
 - 1920×1080 @ 30fps via MJPEG pixel format
 - Path resolution relative to script directory (no broken `~` paths)
@@ -38,6 +40,10 @@ python3 lobstercam.py --camera 1
 
 # Use a different overlay image
 python3 lobstercam.py --image /path/to/my-overlay.png
+
+# Use a different claw overlay, or disable hand tracking
+python3 lobstercam.py --claw-image /path/to/my-claw.png
+python3 lobstercam.py --no-claws
 ```
 
 ## Dependencies
@@ -47,15 +53,20 @@ python3 lobstercam.py --image /path/to/my-overlay.png
 ## How It Works
 1. Opens webcam at 1920×1080 @ 30fps using MJPEG pixel format
 2. Uses MediaPipe Face Mesh to detect up to 5 faces
-3. Estimates head position from eyebrow landmarks (forehead midpoint extrapolated upward)
-4. Overlays 2 lobster PNG images on each head with proper transparency
-5. Bounce animation adds a subtle vertical oscillation
+3. Uses MediaPipe Hands to detect up to 4 hands
+4. Estimates head position from eyebrow landmarks (forehead midpoint extrapolated upward)
+5. Estimates hand position from wrist + middle-finger-base landmarks (palm center)
+6. Overlays 2 lobster PNG images on each head and 1 lobster claw on each hand, with proper transparency
+7. Bounce animation adds a subtle vertical oscillation
 6. Press **Q** to quit
 
 ## Files
 - `SKILL.md` — this file
 - `lobstercam.py` — main application
+- `SKILL.md` — skill description/instructions (frontmatter + usage)
+- `lobstercam.py` — main application
 - `lobster_overlay.png` — lobster overlay image (transparent PNG, 256×256)
+- `lobster_claw.png` — lobster claw overlay for hands (transparent PNG, 256×256)
 - `requirements.txt` — pinned dependencies
 
 ## Known Fix (fixed upstream, 2026-11-12)
