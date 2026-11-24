@@ -1,3 +1,8 @@
+---
+name: lobsterheadz
+description: Face-tracking webcam app that puts bouncing lobster images on detected heads in real time; run lobstercam.py (1080p30 MJPEG, MediaPipe).
+---
+
 # LobsterCam 2 🦞
 
 > Description: Face tracking app that overlays lobster images on people's heads — now at 1080p30 via MJPEG.

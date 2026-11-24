@@ -93,26 +93,42 @@ Any transparent PNG works as an overlay. Tips:
 
 ## Install on OpenClaw
 
-```
-openclaw skills install git:https://github.com/raymondlo84/lobsterheadz.git
-```
+LobsterHeadz ships as an [OpenClaw skill](https://docs.openclaw.ai/tools/skills) — the repo root contains the required `SKILL.md`. Install it in one command:
 
-
-To add LobsterHeadz as a skill in OpenClaw, use this agent configuration:
-
-```yaml
-skills:
-  custom:
-    - path: ./lobsterheadz
-      name: lobsterheadz
-      description: "Face tracking app that overlays lobster images on people's heads — 1080p30 via MJPEG"
+```bash
+openclaw skills install git:raymondlo84/lobsterheadz
 ```
 
-Or create a `lobsterheadz` skill directory with:
-- `SKILL.md` — skill description file
+- By default this lands in the active agent's workspace `skills/` directory; add `--global` to install into the shared managed skills directory instead.
+- Pin a version with `git:raymondlo84/lobsterheadz@main` (or a branch/tag) if you want.
+- Re-run with `--force` to overwrite a previous install.
+
+Then set it up:
+
+```bash
+# 1. Install the Python dependencies (from the skill directory)
+pip3 install -r ~/.openclaw/workspace/skills/lobsterheadz/requirements.txt
+
+# 2. Verify the skill loaded
+openclaw skills list
+openclaw skills info lobsterheadz
+
+# 3. Launch it (headless hosts: point DISPLAY at the screen you want)
+DISPLAY=:1 python3 ~/.openclaw/workspace/skills/lobsterheadz/lobstercam.py --width 1920 --height 1080
+```
+
+Or skip the manual steps entirely and just ask your agent: **"run lobstercam"** — it finds the skill, launches the app, and the camera window appears. Press **Q** to quit.
+
+### What the skill install checks
+
+`openclaw skills install git:` verifies that the repo root has a loadable `SKILL.md` (YAML frontmatter with `name` and `description`) before copying anything, and names the installed skill from that frontmatter (`lobsterheadz`). After install, the skill watcher picks it up on the next agent turn; if you're already in a session, start a new one (`/new`) so the agent sees the refreshed skill list.
+
+If you prefer to wire it up by hand instead of the CLI, the skill is just a directory containing:
+
+- `SKILL.md` — skill description/instructions (frontmatter + usage)
 - `lobstercam.py` — main application
 - `lobster_overlay.png` — default overlay image
-- `requirements.txt` — Python dependencies
+- `requirements.txt` — pinned Python dependencies
 
 ## License
 
