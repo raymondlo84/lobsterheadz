@@ -138,18 +138,6 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset):
     overlay_image_with_transparency(frame, lobster_img, px + offset_x, lobster_y, scale)
 
 
-def open_camera(camera_input, backend):
-    """Open camera device with a specific OpenCV backend."""
-    cap = cv2.VideoCapture(camera_input, backend)
-    if not cap.isOpened():
-        return None
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-    cap.set(cv2.CAP_PROP_FPS, 30)
-    return cap
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="LobsterHeadz 🦞 - Put lobsters on people's heads")
     parser.add_argument("--camera", type=str, default="/dev/video0", help="Camera device index or path (default: /dev/video0)")
