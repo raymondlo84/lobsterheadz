@@ -1,10 +1,10 @@
 # 🦞 LobsterHeadz
 
-Face-tracking webcam app that overlays two bouncy lobster images on people's heads in real-time.
+Face- and hand-tracking webcam app that overlays two bouncy lobster images on people's heads and a lobster claw on their hands in real-time.
 
 ![Demo](docs/demo.png)
 
-> Put lobsters on people's heads. That's it. That's the app.
+> Put lobsters on people's heads and claws on their hands. That's it. That's the app.
 
 ## Features
 
@@ -13,7 +13,7 @@ Face-tracking webcam app that overlays two bouncy lobster images on people's hea
 - 2 lobster overlays per detected face (side-by-side), up to 5 faces
 - Lobster claw overlay on every detected hand, up to 4 hands
 - Transparent PNG overlays with proper alpha blending
-- Subtle bounce animation on the lobsters
+- Subtle bounce animation on the lobsters and claws
 - 1920×1080 @ 30fps via MJPEG pixel format
 - Custom overlay images and camera options
 - Resolves paths relative to script directory (no broken `~` paths)
@@ -40,8 +40,8 @@ pip3 install -r requirements.txt
 ## Run
 
 ```bash
-# Default camera, bundled lobster overlay
-DISPLAY=:1 python3 lobstercam.py --camera 0
+# Default camera (/dev/video0), bundled overlays
+DISPLAY=:1 python3 lobstercam.py
 
 # Custom camera index
 DISPLAY=:1 python3 lobstercam.py --camera 1
@@ -66,7 +66,7 @@ Press **Q** in the camera window to quit.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--camera` | `0` | Camera device index |
+| `--camera` | `/dev/video0` | Camera device index or path |
 | `--image` | bundled overlay | Path to overlay PNG image (lobsters on heads) |
 | `--claw-image` | bundled claw | Path to claw overlay PNG (claws on hands) |
 | `--no-claws` | off | Disable hand tracking and the claw overlay |
@@ -80,7 +80,7 @@ Any transparent PNG works as an overlay. The bundled ones are `lobster_overlay.p
 
 - **256×256** is the default size — scales automatically based on detected face/hand size
 - Use a PNG with **alpha channel** (transparent background) for best results
-- The image is centered and placed above the detected head
+- Head overlays are centered above the detected head; claw overlays sit on the palm, rotate to match the hand's orientation, and scale to cover the hand
 - You can create custom overlays with any image editor — GIFs, cartoon animals, hats, whatever
 
 ## How It Works
@@ -91,14 +91,15 @@ Any transparent PNG works as an overlay. The bundled ones are `lobster_overlay.p
 4. Estimates head position from eyebrow landmarks (forehead midpoint, extrapolated upward)
 5. Estimates hand position from wrist + middle-finger-base landmarks (palm center)
 6. Places two overlay images side-by-side on each detected head, and one claw on each detected hand
-7. Bounce animation adds a subtle vertical oscillation
-8. Face size determines lobster scale and hand size determines claw scale — closer faces and hands get bigger overlays
+7. Claws rotate to point along the hand's finger direction (wrist -> middle-finger tip)
+8. Bounce animation adds a subtle vertical oscillation (phase-shifted per hand)
+9. Face size determines lobster scale (1.25x for a chunkier look) and hand length determines claw scale (~1.2x the hand, so it covers it) — closer faces and hands get bigger overlays
 
 ## Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `mediapipe` | 0.10.18 | Face mesh detection |
+| `mediapipe` | 0.10.18 | Face mesh + hand detection |
 | `opencv-python` | 4.9.0.80 | Video capture & image processing |
 
 ## Install on OpenClaw
@@ -137,7 +138,8 @@ If you prefer to wire it up by hand instead of the CLI, the skill is just a dire
 
 - `SKILL.md` — skill description/instructions (frontmatter + usage)
 - `lobstercam.py` — main application
-- `lobster_overlay.png` — default overlay image
+- `lobster_overlay.png` — default head overlay
+- `lobster_claw.png` — default hand claw overlay
 - `requirements.txt` — pinned Python dependencies
 
 ## License
