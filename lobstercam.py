@@ -172,7 +172,7 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset, overlay):
 
 
 def draw_claw_on_hand(frame, hand_landmarks, h, w, time_offset, overlay, hand_index=0):
-    """Draw a lobster claw on the detected hand."""
+    """Draw a lobster claw on the detected hand, oriented along the fingers."""
     px, py, hand_width = estimate_hand_center(hand_landmarks, w, h)
 
     # Scale claw based on hand size
@@ -182,7 +182,24 @@ def draw_claw_on_hand(frame, hand_landmarks, h, w, time_offset, overlay, hand_in
     bounce = math.sin((time_offset + hand_index * 0.7) * 3.0) * 5
     claw_y = int(py + bounce)
 
-    overlay_image_with_transparency(frame, overlay, px, claw_y, scale)
+    # Rotate the claw so its pincer points along the hand's finger
+    # direction (wrist -> middle-finger tip) instead of staying upright.
+    lm = hand_landmarks.landmark
+    wrist = lm[0]
+    mid_tip = lm[15]
+    hand_angle = math.degrees(math.atan2(mid_tip.y - wrist.y, mid_tip.x - wrist.x))
+    # The asset's pincer points up (image angle -90 deg); positive OpenCV
+    # angles rotate counter-clockwise on screen, hence the sign flip.
+    rotation = -90.0 - hand_angle
+
+    resized = cv2.resize(overlay, (int(overlay.shape[1] * scale), int(overlay.shape[0] * scale)),
+                         interpolation=cv2.INTER_AREA)
+    ch, cw = resized.shape[:2]
+    m = cv2.getRotationMatrix2D((cw / 2, ch / 2), rotation, 1.0)
+    rotated = cv2.warpAffine(resized, m, (cw, ch), flags=cv2.INTER_LINEAR,
+                             borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+
+    overlay_image_with_transparency(frame, rotated, px, claw_y, 1.0)
 
 
 def parse_args():
