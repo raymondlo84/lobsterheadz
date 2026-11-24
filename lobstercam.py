@@ -153,9 +153,9 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset, overlay):
     """Draw TWO lobster images on top of the person's head."""
     px, py, brow_dist = estimate_top_of_head(face_landmarks, w, h)
 
-    # Scale lobster based on face size
+    # Scale lobster based on face size (1.25x for a chunkier look)
     face_width, face_height = estimate_face_size(face_landmarks)
-    scale = max(0.3, min(1.5, face_width * 2))
+    scale = max(0.3, min(1.5, face_width * 2)) * 1.25
 
     # Add a subtle bounce animation
     bounce = math.sin(time_offset * 3.0) * 5
