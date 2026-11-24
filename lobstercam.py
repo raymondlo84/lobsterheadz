@@ -82,22 +82,20 @@ def estimate_face_size(face_landmarks):
 
 
 def estimate_hand_center(hand_landmarks, w, h):
-    """Estimate the center of a hand using MediaPipe hand landmarks."""
+    """Estimate the center of a hand and its length in pixels."""
     lm = hand_landmarks.landmark
     wrist = (lm[0].x, lm[0].y)        # wrist
     mid_mcp = (lm[9].x, lm[9].y)      # middle finger base (palm center)
-    thumb_tip = (lm[4].x, lm[4].y)    # thumb tip
-    pinky_tip = (lm[20].x, lm[20].y)  # pinky tip
+    mid_tip = (lm[15].x, lm[15].y)    # middle finger tip
 
     # Center between wrist and palm
     center_x = (wrist[0] + mid_mcp[0]) / 2
     center_y = (wrist[1] + mid_mcp[1]) / 2
 
-    # Thumb-to-pinky distance (proxy for hand width)
-    hand_width = math.sqrt(
-        (pinky_tip[0] - thumb_tip[0]) ** 2 +
-        (pinky_tip[1] - thumb_tip[1]) ** 2
-    )
+    # Hand length: wrist -> middle-finger tip, in pixels
+    dx = (mid_tip[0] - wrist[0]) * w
+    dy = (mid_tip[1] - wrist[1]) * h
+    hand_len_px = math.sqrt(dx * dx + dy * dy)
 
     # Clamp to image bounds, then convert to pixel coordinates
     center_x = max(0.01, min(0.99, center_x))
@@ -105,7 +103,7 @@ def estimate_hand_center(hand_landmarks, w, h):
     pixel_x = int(center_x * w)
     pixel_y = int(center_y * h)
 
-    return pixel_x, pixel_y, hand_width
+    return pixel_x, pixel_y, hand_len_px
 
 
 def overlay_image_with_transparency(frame, overlay, x, y, scale=1.0):
@@ -173,10 +171,11 @@ def draw_lobster_on_head(frame, face_landmarks, h, w, time_offset, overlay):
 
 def draw_claw_on_hand(frame, hand_landmarks, h, w, time_offset, overlay, hand_index=0):
     """Draw a lobster claw on the detected hand, oriented along the fingers."""
-    px, py, hand_width = estimate_hand_center(hand_landmarks, w, h)
+    px, py, hand_len_px = estimate_hand_center(hand_landmarks, w, h)
 
-    # Scale claw based on hand size
-    scale = max(0.4, min(1.6, hand_width * 3.0))
+    # Scale the claw to roughly cover the whole hand: the asset is
+    # 256px tall, so render it at ~1.2x the measured hand length.
+    scale = max(0.5, min(2.2, 1.2 * hand_len_px / 256.0))
 
     # Subtle bounce animation, phase-shifted per hand
     bounce = math.sin((time_offset + hand_index * 0.7) * 3.0) * 5
